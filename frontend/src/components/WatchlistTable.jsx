@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useState, Fragment } from 'react';
 import { PRIORITY_STATS, findValue, formatVal, parseNum } from '../stats.js';
 import { GOALIE_STATS } from '../goalieStats.js';
-import { remove, setNote } from '../watchlist.js';
+import { remove } from '../watchlist.js';
+import { getBio } from '../playerUtils.js';
+import { NotesToggle, NotesPanel } from './Notes.jsx';
 import PlayerBio from './PlayerBio.jsx';
 
 // ─── Column definitions (same stat keys as the comparison pages) ──────────────
@@ -18,6 +20,9 @@ export const SKATER_COLS = pick(PRIORITY_STATS, [
   ['Puck Battle Won %', 'PB%'], ['Accurate Pass %', 'Pass%'], ['Hits/GP', 'Hits/GP'],
   ['Takeaways/GP', 'TA/GP'], ['Giveaways/GP', 'GA/GP', true],
 ]);
+
+// Stats shown on phone cards, by short label.
+const CARD_STATS = { Skaters: ['GP', 'G', 'A', 'P', 'xG/GP'], Goalies: ['GP', 'W', 'SV%', 'GA', 'xGA'] };
 
 export const GOALIE_COLS = pick(GOALIE_STATS, [
   ['Games Played', 'GP'], ['Games Started', 'GS'], ['Games Won', 'W'], ['Games Lost', 'L'],
@@ -65,18 +70,6 @@ function InStatLink({ id }) {
   );
 }
 
-function NoteField({ id, value }) {
-  const [text, setText] = useState(value ?? '');
-  return (
-    <input
-      value={text} onChange={(e) => setText(e.target.value)}
-      onBlur={() => { if (text !== (value ?? '')) setNote(id, text); }}
-      placeholder="Note…"
-      className="w-40 rounded border border-slate-800 bg-transparent px-2 py-1 text-xs text-slate-300 placeholder:text-slate-700 focus:border-brand-500 focus:outline-none"
-    />
-  );
-}
-
 // ─── Table ────────────────────────────────────────────────────────────────────
 
 // Saved column order (list of stat labels) per table, kept in this browser.
@@ -110,6 +103,8 @@ export default function WatchlistTable({ title, accent, rows, cols: allCols }) {
 
   const [sortKey, setSortKey] = useState(cols.find((c) => c.short === 'P' || c.short === 'SV%')?.label ?? cols[0].label);
   const [sortAsc, setSortAsc] = useState(false);
+  const [openNotes, setOpenNotes] = useState(null); // player id whose note log is expanded
+  const toggleNotes = (id) => setOpenNotes((cur) => (cur === id ? null : id));
 
   if (rows.length === 0) return null;
 
@@ -144,7 +139,9 @@ export default function WatchlistTable({ title, accent, rows, cols: allCols }) {
           <span className="text-xs text-slate-500">{rows.length}</span>
         </div>
       </div>
-      <div className="overflow-x-auto">
+      <PlayerCards title={title} rows={sorted} cols={cols} colVals={colVals} val={val}
+        sortKey={sortKey} sortAsc={sortAsc} onSort={handleSort} openNotes={openNotes} onToggleNotes={toggleNotes} />
+      <div className="hidden overflow-x-auto md:block">
         <table className="w-full border-collapse text-xs tabular-nums">
           <thead>
             <tr className="border-b border-slate-800" style={{ background: '#06204a' }}>
@@ -172,13 +169,14 @@ export default function WatchlistTable({ title, accent, rows, cols: allCols }) {
                   </th>
                 );
               })}
-              <th className="px-3 py-2.5 text-left font-display text-sm font-semibold uppercase tracking-wider text-slate-500">Note</th>
+              <th className="px-3 py-2.5 text-left font-display text-sm font-semibold uppercase tracking-wider text-slate-500">Notes</th>
               <th className="px-3 py-2.5" />
             </tr>
           </thead>
           <tbody>
             {sorted.map(({ entry: e, norm, loading }, i) => (
-              <tr key={e.id} className="border-b border-slate-900 transition-all hover:brightness-110"
+              <Fragment key={e.id}>
+              <tr className="border-b border-slate-900 transition-all hover:brightness-110"
                   style={{ background: i % 2 === 0 ? '#05193a' : '#081e44' }}>
                 <td className="sticky left-0 z-10 px-3 py-2 font-bold text-slate-600" style={{ background: 'inherit' }}>{i + 1}</td>
                 <td className="sticky left-8 z-10 border-r border-slate-800 px-3 py-2" style={{ background: 'inherit' }}>
@@ -201,7 +199,7 @@ export default function WatchlistTable({ title, accent, rows, cols: allCols }) {
                     </td>
                   );
                 })}
-                <td className="px-3 py-2"><NoteField id={e.id} value={e.note} /></td>
+                <td className="px-3 py-2"><NotesToggle notes={e.notes} open={openNotes === e.id} onToggle={() => toggleNotes(e.id)} /></td>
                 <td className="px-3 py-2 text-right">
                   <button onClick={() => remove(e.id)} title="Remove from watchlist"
                     className="rounded-md border border-slate-800 px-2 py-1 text-xs text-slate-500 transition hover:border-rose-700 hover:text-rose-400">
@@ -209,13 +207,82 @@ export default function WatchlistTable({ title, accent, rows, cols: allCols }) {
                   </button>
                 </td>
               </tr>
+              {openNotes === e.id && (
+                <tr className="border-b border-slate-800" style={{ background: '#0a2350' }}>
+                  <td colSpan={cols.length + 4} className="px-4 py-3">
+                    <div className="sticky left-4 max-w-3xl">
+                      <p className="mb-2 font-display text-sm font-semibold uppercase tracking-wide text-white">Notes · {e.name}</p>
+                      <NotesPanel playerId={e.id} notes={e.notes} />
+                    </div>
+                  </td>
+                </tr>
+              )}
+              </Fragment>
             ))}
           </tbody>
         </table>
       </div>
-      <div className="border-t border-slate-800 px-4 py-2 text-xs text-slate-600" style={{ background: '#06204a' }}>
+      <div className="hidden border-t border-slate-800 px-4 py-2 text-xs text-slate-600 md:block" style={{ background: '#06204a' }}>
         Click any column to sort · Drag headers to reorder · Bright blue = best · Grey = worst among players on your watchlist · Click a name to open InStat
       </div>
+    </div>
+  );
+}
+
+// ─── Phone cards ──────────────────────────────────────────────────────────────
+
+function PlayerCards({ title, rows, cols, colVals, val, sortKey, sortAsc, onSort, openNotes, onToggleNotes }) {
+  const keyCols = (CARD_STATS[title] ?? []).map((sh) => cols.find((c) => c.short === sh)).filter(Boolean);
+  return (
+    <div className="md:hidden">
+      <div className="flex items-center gap-2 border-b border-slate-800 px-4 py-2" style={{ background: '#06204a' }}>
+        <label className="text-xs text-slate-500">Sort by</label>
+        <select value={sortKey} onChange={(e) => onSort(e.target.value)}
+          className="flex-1 rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-xs text-slate-100 focus:outline-none">
+          {cols.map((c) => <option key={c.label} value={c.label}>{c.label}</option>)}
+        </select>
+        <button onClick={() => onSort(sortKey)} title="Flip sort direction"
+          className="rounded-md border border-slate-700 px-2 py-1 text-xs text-slate-300">{sortAsc ? '▲ Low' : '▼ High'}</button>
+      </div>
+      <ul className="divide-y divide-slate-800">
+        {rows.map(({ entry: e, norm, loading }, i) => {
+          const b = getBio(e) ?? {};
+          const meta = [b.position, b.birthYear && `'${b.birthYear.slice(2)}`, e.team].filter(Boolean).join(' · ');
+          return (
+            <li key={e.id} className="px-4 py-3" style={{ background: i % 2 === 0 ? '#05193a' : '#081e44' }}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <a href={`https://app.hudl.com/instat/hockey/players/${e.id}`} target="_blank" rel="noopener noreferrer"
+                     className="flex items-center gap-2 font-display text-lg font-semibold leading-tight text-white">
+                    <span className="truncate">{e.name}</span>
+                    <img src="/instat-logo.png" alt="InStat" className="h-4 w-4 shrink-0 rounded" />
+                  </a>
+                  <p className="truncate text-xs text-slate-400">{meta || '—'}</p>
+                  <p className="truncate text-[11px] text-slate-500">{[e.leagueName, e.seasonName].filter(Boolean).join(' · ')}</p>
+                </div>
+                <button onClick={() => remove(e.id)} title="Remove from watchlist"
+                  className="shrink-0 rounded-md border border-slate-800 px-2.5 py-1.5 text-xs text-slate-500 hover:text-rose-400">✕</button>
+              </div>
+              <div className="mt-2.5 grid gap-1.5 tabular-nums" style={{ gridTemplateColumns: `repeat(${keyCols.length}, minmax(0, 1fr))` }}>
+                {keyCols.map((c) => {
+                  const v = val({ norm }, c);
+                  const style = cellStyle(v, colVals[c.label], c.lowerIsBetter);
+                  return (
+                    <div key={c.label} className="rounded-md px-1 py-1.5 text-center" style={style ?? { background: '#0c2550', color: v != null ? '#f1f5f9' : '#7587a8' }}>
+                      <div className="font-display text-[11px] uppercase tracking-wide opacity-75">{c.short}</div>
+                      <div className="font-display text-lg font-semibold leading-tight">{loading ? '…' : v != null ? formatVal(v, c.format) : '—'}</div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="mt-2.5">
+                <NotesToggle notes={e.notes} open={openNotes === e.id} onToggle={() => onToggleNotes(e.id)} />
+                {openNotes === e.id && <div className="mt-2"><NotesPanel playerId={e.id} notes={e.notes} /></div>}
+              </div>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }
