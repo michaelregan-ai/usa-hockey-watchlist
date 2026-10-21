@@ -84,7 +84,7 @@ function useWatchlistStats(credentials, items) {
 function Toolbar({ items, onRefresh, refreshing, savedAt }) {
   const fileRef = useRef(null);
   const [msg, setMsg] = useState('');
-  const btn = 'rounded-lg border border-slate-700 px-3 py-1.5 text-xs text-slate-300 hover:border-orange-600 hover:text-orange-300 transition disabled:opacity-40';
+  const btn = 'rounded-lg border border-slate-700 px-3 py-1.5 text-xs text-slate-300 hover:border-brand-600 hover:text-brand-300 transition disabled:opacity-40';
 
   function doExport() {
     const blob = new Blob([JSON.stringify(items, null, 2)], { type: 'application/json' });
@@ -168,12 +168,12 @@ export default function App() {
 
   return (
     <div className="min-h-screen">
-      <header className="border-b border-slate-800 bg-slate-900/80 backdrop-blur">
+      <header className="border-b border-slate-800 border-t-4 border-t-brand-600 bg-slate-900/80 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-3">
-            <span className="text-2xl">🇺🇸</span>
+            <div className="h-10 w-1.5 rounded-full bg-brand-600" />
             <div>
-              <h1 className="text-base font-bold leading-tight text-slate-100">USA Hockey Watchlist</h1>
+              <h1 className="font-display text-2xl font-bold uppercase leading-none tracking-wide text-white">USA Hockey Watchlist</h1>
               <p className="text-xs text-slate-500">Personal scouting dashboard</p>
             </div>
           </div>
@@ -219,8 +219,8 @@ export default function App() {
               </div>
             ) : (
               <>
-                <WatchlistTable title="Skaters" accent="text-orange-400" rows={skaters} cols={SKATER_COLS} />
-                <WatchlistTable title="Goalies" accent="text-emerald-400" rows={goalies} cols={GOALIE_COLS} />
+                <WatchlistTable title="Skaters" accent="text-white" rows={skaters} cols={SKATER_COLS} />
+                <WatchlistTable title="Goalies" accent="text-white" rows={goalies} cols={GOALIE_COLS} />
               </>
             )}
           </>

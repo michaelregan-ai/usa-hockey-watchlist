@@ -6,7 +6,7 @@ import {
 import { useWatchlist, add, toWatchEntry } from '../watchlist.js';
 import PlayerBio from './PlayerBio.jsx';
 
-const selectCls = 'w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-orange-500 disabled:opacity-50';
+const selectCls = 'w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:opacity-50';
 
 // League + season picker, then a name search over that league's skaters and goalies.
 export default function AddPlayer({ credentials, tournaments, seasons, loadingContext }) {
@@ -70,14 +70,14 @@ export default function AddPlayer({ credentials, tournaments, seasons, loadingCo
 
   return (
     <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-4">
-      <h2 className="mb-3 text-sm font-semibold text-slate-200">Add players</h2>
+      <h2 className="mb-3 font-display text-lg font-semibold uppercase tracking-wide text-white">Add players</h2>
       <div className="flex flex-wrap items-end gap-4">
         <div className="min-w-48 flex-1">
           <label className="mb-1 block text-xs font-medium text-slate-400">League / Tournament</label>
           <input
             value={leagueFilter} onChange={(e) => setLeagueFilter(e.target.value)}
             placeholder="Filter leagues (e.g. USHL, NTDP, U18)…"
-            className="mb-1.5 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs text-slate-200 placeholder:text-slate-600 focus:border-orange-500 focus:outline-none"
+            className="mb-1.5 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs text-slate-200 placeholder:text-slate-600 focus:border-brand-500 focus:outline-none"
           />
           <select value={tournamentId} onChange={handleTournamentChange} disabled={loadingContext} className={selectCls}>
             <option value="">— Select league ({leagueOptions.length}) —</option>
@@ -97,7 +97,7 @@ export default function AddPlayer({ credentials, tournaments, seasons, loadingCo
           <input
             value={query} onChange={(e) => setQuery(e.target.value)} disabled={!players || players.length === 0}
             placeholder={loading ? 'Loading players…' : players ? `Search ${players.length} players…` : 'Pick a league & season first'}
-            className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-1 focus:ring-orange-500 disabled:opacity-50"
+            className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:opacity-50"
           />
         </div>
       </div>
@@ -115,14 +115,14 @@ export default function AddPlayer({ credentials, tournaments, seasons, loadingCo
                 <div className="min-w-0">
                   <p className="truncate text-sm text-slate-100">
                     {playerDisplayName(player)}
-                    {isGoalie && <span className="ml-2 rounded bg-emerald-900/60 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-300">G</span>}
+                    {isGoalie && <span className="ml-2 rounded bg-slate-700 px-1.5 py-0.5 text-[10px] font-semibold text-white">G</span>}
                   </p>
                   <p className="truncate text-xs text-slate-500">{player.team_name || '—'}</p>
                   <PlayerBio player={player} isGoalie={isGoalie} variant="inline" />
                 </div>
                 <button
                   onClick={() => addPlayer(player, isGoalie)} disabled={on}
-                  className="shrink-0 rounded-md bg-orange-600 px-3 py-1 text-xs font-semibold text-white hover:bg-orange-500 disabled:cursor-default disabled:bg-slate-800 disabled:text-slate-500 transition"
+                  className="shrink-0 rounded-md bg-brand-600 px-3 py-1 text-xs font-semibold text-white hover:bg-brand-500 disabled:cursor-default disabled:bg-slate-800 disabled:text-slate-500 transition"
                 >
                   {on ? '✓ On watchlist' : '+ Add'}
                 </button>

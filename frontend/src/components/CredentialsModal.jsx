@@ -22,7 +22,7 @@ export default function CredentialsModal({ credentials, onSave, onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-sm">
       <div className="w-full max-w-md rounded-xl border border-slate-700 bg-slate-900 p-6 shadow-2xl">
         <h2 className="mb-1 text-lg font-semibold text-slate-100">InStat API Credentials</h2>
         <p className="mb-5 text-sm text-slate-400">
@@ -38,7 +38,7 @@ export default function CredentialsModal({ credentials, onSave, onClose }) {
               value={id}
               onChange={(e) => setId(e.target.value)}
               placeholder="Your InStat API ID"
-              className="w-full rounded-lg border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-ice-500 focus:outline-none focus:ring-1 focus:ring-ice-500"
+              className="w-full rounded-lg border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
             />
           </div>
           <div>
@@ -48,7 +48,7 @@ export default function CredentialsModal({ credentials, onSave, onClose }) {
               value={key}
               onChange={(e) => setKey(e.target.value)}
               placeholder="Your InStat API Key"
-              className="w-full rounded-lg border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-ice-500 focus:outline-none focus:ring-1 focus:ring-ice-500"
+              className="w-full rounded-lg border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
             />
           </div>
         </div>
@@ -58,7 +58,7 @@ export default function CredentialsModal({ credentials, onSave, onClose }) {
         <div className="mt-6 flex gap-3">
           <button
             onClick={handleSave}
-            className="flex-1 rounded-lg bg-ice-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-ice-500"
+            className="flex-1 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-500"
           >
             Save Credentials
           </button>
