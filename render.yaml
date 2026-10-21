@@ -1,0 +1,15 @@
+# Render Blueprint — deploys the whole app (frontend + backend) as one free web service.
+# In Render: New + → Blueprint → connect this repo → Apply.
+services:
+  - type: web
+    name: usa-hockey-watchlist
+    runtime: node
+    plan: free
+    # Installs root + backend deps and builds the frontend into frontend/dist.
+    buildCommand: npm install && npm run build
+    # Express serves frontend/dist and proxies InStat from the same URL.
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+    autoDeploy: true
