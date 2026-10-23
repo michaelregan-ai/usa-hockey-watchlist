@@ -6,7 +6,8 @@ import WatchlistTable, { SKATER_COLS, GOALIE_COLS } from './components/Watchlist
 import { fetchSeasons } from './api.js';
 import { loadLeagueSkaters, loadLeagueGoalies } from './leagueLoader.js';
 import { getPlayerId, timeAgo } from './playerUtils.js';
-import { useWatchlist, clearAll, importWatchlist } from './watchlist.js';
+import { useWatchlist, clearAll, importWatchlist, GRADES } from './watchlist.js';
+import { GRADE_STYLE } from './components/GradePicker.jsx';
 import { TOURNAMENTS } from './tournaments.js';
 
 const CREDS_KEY = 'usah_watchlist_creds';
@@ -81,6 +82,30 @@ function useWatchlistStats(credentials, items) {
   return { norms, pending, errors: Object.values(errors), savedAt, refreshAll };
 }
 
+// Toggle chips: show only players with the picked grades ('' = ungraded). Empty set = everyone.
+function GradeFilter({ selected, onChange, counts }) {
+  const toggle = (g) => { const n = new Set(selected); n.has(g) ? n.delete(g) : n.add(g); onChange(n); };
+  const chip = 'h-8 min-w-9 rounded-md border px-2 font-display text-sm font-semibold transition';
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      <span className="mr-1 font-display text-sm font-semibold uppercase tracking-wide text-slate-400">Grade</span>
+      {[...GRADES, ''].map((g) => {
+        const on = selected.has(g);
+        return (
+          <button key={g || 'none'} onClick={() => toggle(g)} aria-pressed={on}
+            className={`${chip} ${on ? 'border-white' : 'border-slate-700 opacity-60 hover:opacity-100'}`}
+            style={g ? GRADE_STYLE[g] : { color: '#b3c0d6' }}>
+            {g || 'Ungraded'} <span className="text-xs font-normal opacity-75">{counts[g] ?? 0}</span>
+          </button>
+        );
+      })}
+      {selected.size > 0 && (
+        <button onClick={() => onChange(new Set())} className="ml-1 text-xs text-slate-500 hover:text-brand-400">Show all</button>
+      )}
+    </div>
+  );
+}
+
 function Toolbar({ items, onRefresh, refreshing, savedAt }) {
   const fileRef = useRef(null);
   const [msg, setMsg] = useState('');
@@ -138,6 +163,7 @@ export default function App() {
   const [loadingContext, setLoadingContext] = useState(false);
 
   const items = useWatchlist();
+  const [gradeFilter, setGradeFilter] = useState(new Set());
   const { norms, pending, errors, savedAt, refreshAll } = useWatchlistStats(credentials, items);
 
   useEffect(() => {
@@ -163,8 +189,11 @@ export default function App() {
     const k = groupKey(entry);
     return { entry, norm: norms[k]?.[entry.id] ?? null, loading: pending.has(k) && !norms[k] };
   });
-  const skaters = rowsFor(items.filter((i) => !i.isGoalie));
-  const goalies = rowsFor(items.filter((i) => i.isGoalie));
+  const gradeCounts = {};
+  for (const i of items) gradeCounts[i.grade || ''] = (gradeCounts[i.grade || ''] ?? 0) + 1;
+  const shown = gradeFilter.size ? items.filter((i) => gradeFilter.has(i.grade || '')) : items;
+  const skaters = rowsFor(shown.filter((i) => !i.isGoalie));
+  const goalies = rowsFor(shown.filter((i) => i.isGoalie));
 
   return (
     <div className="min-h-screen">
@@ -201,7 +230,8 @@ export default function App() {
             <div className="flex flex-wrap items-center justify-between gap-3">
               <p className="text-sm text-slate-400">
                 {items.length} player{items.length !== 1 ? 's' : ''} on watchlist
-                {items.length > 0 && ` · ${skaters.length} skater${skaters.length !== 1 ? 's' : ''}, ${goalies.length} goalie${goalies.length !== 1 ? 's' : ''}`}
+                {gradeFilter.size > 0 && ` · showing ${shown.length}`}
+                {items.length > 0 && !gradeFilter.size && ` · ${skaters.length} skater${skaters.length !== 1 ? 's' : ''}, ${goalies.length} goalie${goalies.length !== 1 ? 's' : ''}`}
               </p>
               <Toolbar items={items} onRefresh={refreshAll} refreshing={pending.size > 0} savedAt={savedAt} />
             </div>
@@ -219,6 +249,12 @@ export default function App() {
               </div>
             ) : (
               <>
+                <GradeFilter selected={gradeFilter} onChange={setGradeFilter} counts={gradeCounts} />
+                {shown.length === 0 && (
+                  <p className="rounded-xl border border-slate-800 bg-slate-900/50 p-6 text-center text-sm text-slate-400">
+                    No players match that grade filter.
+                  </p>
+                )}
                 <WatchlistTable title="Skaters" accent="text-white" rows={skaters} cols={SKATER_COLS} />
                 <WatchlistTable title="Goalies" accent="text-white" rows={goalies} cols={GOALIE_COLS} />
               </>

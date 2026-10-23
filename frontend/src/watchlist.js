@@ -42,13 +42,13 @@ export function subscribe(fn) { listeners.add(fn); return () => listeners.delete
 export function getAll() { return items; }
 export function has(id) { const s = String(id); return items.some((i) => i.id === s); }
 
-// Re-adding a player from a different league/season replaces the old context (keeps the notes).
+// Re-adding a player from a different league/season replaces the old context (keeps notes and grade).
 export function add(entry) {
   const id = String(entry?.id ?? '');
   if (!id) return;
   const prev = items.find((i) => i.id === id);
   const rest = items.filter((i) => i.id !== id);
-  commit([{ ...entry, id, notes: prev?.notes ?? [], addedAt: prev?.addedAt ?? Date.now() }, ...rest]);
+  commit([{ ...entry, id, notes: prev?.notes ?? [], grade: prev?.grade ?? '', addedAt: prev?.addedAt ?? Date.now() }, ...rest]);
 }
 export function remove(id) { const s = String(id); commit(items.filter((i) => i.id !== s)); }
 function updateNotes(id, fn) { const s = String(id); commit(items.map((i) => (i.id === s ? { ...i, notes: fn(i.notes ?? []) } : i))); }
@@ -58,6 +58,11 @@ export function addNote(id, text, date = today()) {
   updateNotes(id, (ns) => [{ id: newNoteId(), date, text: t }, ...ns].sort((a, b) => b.date.localeCompare(a.date)));
 }
 export function deleteNote(id, noteId) { updateNotes(id, (ns) => ns.filter((n) => n.id !== noteId)); }
+export const GRADES = ['A', 'B', 'C', 'D'];
+export function setGrade(id, grade) {
+  const s = String(id);
+  commit(items.map((i) => (i.id === s ? { ...i, grade: GRADES.includes(grade) ? grade : '' } : i)));
+}
 export function clearAll() { commit([]); }
 
 export function importWatchlist(incoming) {

@@ -4,6 +4,7 @@ import { GOALIE_STATS } from '../goalieStats.js';
 import { remove } from '../watchlist.js';
 import { getBio } from '../playerUtils.js';
 import { NotesToggle, NotesPanel } from './Notes.jsx';
+import GradePicker, { gradeRank } from './GradePicker.jsx';
 import PlayerBio from './PlayerBio.jsx';
 
 // ─── Column definitions (same stat keys as the comparison pages) ──────────────
@@ -20,6 +21,9 @@ export const SKATER_COLS = pick(PRIORITY_STATS, [
   ['Puck Battle Won %', 'PB%'], ['Accurate Pass %', 'Pass%'], ['Hits/GP', 'Hits/GP'],
   ['Takeaways/GP', 'TA/GP'], ['Giveaways/GP', 'GA/GP', true],
 ]);
+
+// Sort key for the coach's grade column (not a stat, so it lives outside cols).
+export const GRADE_KEY = 'Grade';
 
 // Stats shown on phone cards, by short label.
 const CARD_STATS = { Skaters: ['GP', 'G', 'A', 'P', 'xG/GP'], Goalies: ['GP', 'W', 'SV%', 'GA', 'xGA'] };
@@ -115,8 +119,9 @@ export default function WatchlistTable({ title, accent, rows, cols: allCols }) {
 
   const sortCol = cols.find((c) => c.label === sortKey);
   const val = (r, c) => (r.norm ? findValue(r.norm, c.keys) : null);
+  const sortVal = (r) => (sortKey === GRADE_KEY ? gradeRank(r.entry.grade) : parseNum(val(r, sortCol)));
   const sorted = [...rows].sort((a, b) => {
-    const va = parseNum(val(a, sortCol)), vb = parseNum(val(b, sortCol));
+    const va = sortVal(a), vb = sortVal(b);
     if (va === null && vb === null) return a.entry.name.localeCompare(b.entry.name);
     if (va === null) return 1;
     if (vb === null) return -1;
@@ -147,6 +152,11 @@ export default function WatchlistTable({ title, accent, rows, cols: allCols }) {
             <tr className="border-b border-slate-800" style={{ background: '#06204a' }}>
               <th className="sticky left-0 z-20 w-8 px-3 py-2.5 text-left font-display text-sm font-semibold uppercase tracking-wider text-slate-500" style={{ background: '#06204a' }}>#</th>
               <th className="sticky left-8 z-20 min-w-56 border-r border-slate-800 px-3 py-2.5 text-left font-display text-sm font-semibold uppercase tracking-wider text-slate-400" style={{ background: '#06204a' }}>Player</th>
+              <th onClick={() => handleSort(GRADE_KEY)} title="Your A–D grade"
+                  className="cursor-pointer select-none whitespace-nowrap border-r border-slate-800 px-2 py-2.5 text-center font-display text-sm font-semibold uppercase tracking-wider"
+                  style={{ color: sortKey === GRADE_KEY ? '#ec5a6e' : '#b3c0d6' }}>
+                Grade&nbsp;{sortKey === GRADE_KEY ? (sortAsc ? '▲' : '▼') : <span style={{ color: '#4f6189' }}>↕</span>}
+              </th>
               {cols.map((c) => {
                 const active = sortKey === c.label;
                 return (
@@ -190,6 +200,7 @@ export default function WatchlistTable({ title, accent, rows, cols: allCols }) {
                   </p>
                   <PlayerBio player={e} isGoalie={e.isGoalie} variant="inline" />
                 </td>
+                <td className="border-r border-slate-800 px-2 py-2 text-center"><GradePicker id={e.id} grade={e.grade} /></td>
                 {cols.map((c) => {
                   const v = val({ norm }, c);
                   const style = cellStyle(v, colVals[c.label], c.lowerIsBetter);
@@ -209,7 +220,7 @@ export default function WatchlistTable({ title, accent, rows, cols: allCols }) {
               </tr>
               {openNotes === e.id && (
                 <tr className="border-b border-slate-800" style={{ background: '#0a2350' }}>
-                  <td colSpan={cols.length + 4} className="px-4 py-3">
+                  <td colSpan={cols.length + 5} className="px-4 py-3">
                     <div className="sticky left-4 max-w-3xl">
                       <p className="mb-2 font-display text-sm font-semibold uppercase tracking-wide text-white">Notes · {e.name}</p>
                       <NotesPanel playerId={e.id} notes={e.notes} />
@@ -239,6 +250,7 @@ function PlayerCards({ title, rows, cols, colVals, val, sortKey, sortAsc, onSort
         <label className="text-xs text-slate-500">Sort by</label>
         <select value={sortKey} onChange={(e) => onSort(e.target.value)}
           className="flex-1 rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-xs text-slate-100 focus:outline-none">
+          <option value={GRADE_KEY}>My grade</option>
           {cols.map((c) => <option key={c.label} value={c.label}>{c.label}</option>)}
         </select>
         <button onClick={() => onSort(sortKey)} title="Flip sort direction"
@@ -260,8 +272,11 @@ function PlayerCards({ title, rows, cols, colVals, val, sortKey, sortAsc, onSort
                   <p className="truncate text-xs text-slate-400">{meta || '—'}</p>
                   <p className="truncate text-[11px] text-slate-500">{[e.leagueName, e.seasonName].filter(Boolean).join(' · ')}</p>
                 </div>
-                <button onClick={() => remove(e.id)} title="Remove from watchlist"
-                  className="shrink-0 rounded-md border border-slate-800 px-2.5 py-1.5 text-xs text-slate-500 hover:text-rose-400">✕</button>
+                <div className="flex shrink-0 items-center gap-2">
+                  <GradePicker id={e.id} grade={e.grade} size="lg" />
+                  <button onClick={() => remove(e.id)} title="Remove from watchlist"
+                    className="rounded-md border border-slate-800 px-2.5 py-1.5 text-xs text-slate-500 hover:text-rose-400">✕</button>
+                </div>
               </div>
               <div className="mt-2.5 grid gap-1.5 tabular-nums" style={{ gridTemplateColumns: `repeat(${keyCols.length}, minmax(0, 1fr))` }}>
                 {keyCols.map((c) => {
